@@ -148,10 +148,6 @@ function getWeaponPool(playerDeck){
   return weaponPool
 }
 
-function renderStatus(statusText) {
-  document.getElementById('ssstatus').textContent = statusText;
-}
-
 function requestWeaponData() {
   console.log('prerequest')
   getUidVersion().then(
@@ -160,62 +156,29 @@ function requestWeaponData() {
     getWeaponPool
   ).then(
     function(result) {
-      renderStatus(JSON.stringify(result))
+      console.log(JSON.stringify(result))
+      populateWeaponData(JSON.stringify(result))
     }
   );
-  status_response = {
-    action: 'status_update',
+  var status_response = {
+    action: 'update_status',
     body: 'Getting Weapon Data...',
   }
-  console.log('postrequest' + status_response.toString()) 
+  console.log('postrequest' + status_response.body) 
   return status_response
 }
 
-// function handleRequest(request, sender, sendResponse) {
-//   console.log('handling request')
-//   console.log(sender.tab ?
-//     "from a content script:" + sender.tab.url :
-//     "from the extension"
-//   );
-//   if (request.action == 'request_weapon_data') {
-//     response = getWeaponData();
-//   }
-//   sendResponse(response);
-// }
-// chrome.runtime.onMessage.addListener(handleRequest);
+function populateWeaponData(weaponData) {
+  chrome.runtime.sendMessage({action: "populate_weapon_data", body: weaponData}, null);
+}
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
-    console.log(sender.tab ?
-                "from a content script:" + sender.tab.url :
-                "from the extension");
-    if (request.greeting == "hello")
-      sendResponse({farewell: "goodbye"});
-  });
-
-// getWeaponData('taser', function(response) {
-//   console.log(response)
-// }, function(error_string) {
-//   console.log(error_string)
-// });
-//  getCurrentTabUrl(function(url) {
-//    // Put the image URL in Google search.
-//    renderStatus('Performing Google Image search for ' + url);
-//
-//    getImageUrl(url, function(imageUrl, width, height) {
-//
-//      renderStatus('Search term: ' + url + '\n' +
-//          'Google image search result: ' + imageUrl);
-//      var imageResult = document.getElementById('image-result');
-//      // Explicitly set the width/height to minimize the number of reflows. For
-//      // a single image, this does not matter, but if you're going to embed
-//      // multiple external images in your page, then the absence of width/height
-//      // attributes causes the popup to resize multiple times.
-//      imageResult.width = width;
-//      imageResult.height = height;
-//      imageResult.src = imageUrl;
-//      imageResult.hidden = false;
-//
-//    }, function(errorMessage) {
-//      renderStatus('Cannot display image. ' + errorMessage);
-//    });
+    var response = {
+      action: 'update_status',
+      body: 'The message sent to the background did not correspond to any command',
+    }
+    if (request.action == "request_weapon_data")
+      response = requestWeaponData()
+    sendResponse(response);
+});
